@@ -573,7 +573,7 @@ static int pb_repeated_find_message(lua_State* l)
 	for (int i = 0; i < sz; ++i) { \
 		const google::protobuf::Message& pSubFieldMessage = pReflection->GetRepeatedMessage(*pMessage, pField, i); \
 		const google::protobuf::Reflection* pSubFieldReflection = pSubFieldMessage.GetReflection();
-#define FIND_KEY_CHECK(exp) if(exp){ idx = i; break; }
+#define FINDKEY_CHECK(exp) if(exp){ idx = i; break; }
 #define FINDKEY_END }
 
 	switch (pSubField->cpp_type()) {
@@ -582,49 +582,49 @@ static int pb_repeated_find_message(lua_State* l)
 			FINDKEY_BEGIN
 				std::string str;
 				str = pSubFieldReflection->GetStringReference(pSubFieldMessage, pSubField, &str);
-				FIND_KEY_CHECK(!strncmp(val, str.c_str(), str.size()));
+				FINDKEY_CHECK(!strncmp(val, str.c_str(), str.size()));
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_INT32: {
 			int32_t val = lua_tointeger(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(pSubFieldReflection->GetInt32(pSubFieldMessage, pSubField) == val)
+				FINDKEY_CHECK(pSubFieldReflection->GetInt32(pSubFieldMessage, pSubField) == val)
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_UINT32: {
 			uint32_t val = lua_tointeger(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(pSubFieldReflection->GetUInt32(pSubFieldMessage, pSubField) == val)
+				FINDKEY_CHECK(pSubFieldReflection->GetUInt32(pSubFieldMessage, pSubField) == val)
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_INT64: {
 			int64_t val = lua_tointeger(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(pSubFieldReflection->GetInt64(pSubFieldMessage, pSubField) == val)
+				FINDKEY_CHECK(pSubFieldReflection->GetInt64(pSubFieldMessage, pSubField) == val)
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_UINT64: {
 			uint64_t val = lua_tointeger(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(pSubFieldReflection->GetUInt64(pSubFieldMessage, pSubField) == val)
+				FINDKEY_CHECK(pSubFieldReflection->GetUInt64(pSubFieldMessage, pSubField) == val)
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT: {
 			float val = lua_tonumber(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(pSubFieldReflection->GetFloat(pSubFieldMessage, pSubField) == val)
+				FINDKEY_CHECK(pSubFieldReflection->GetFloat(pSubFieldMessage, pSubField) == val)
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE: {
 			double val = lua_tonumber(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(pSubFieldReflection->GetDouble(pSubFieldMessage, pSubField) == val)
+				FINDKEY_CHECK(pSubFieldReflection->GetDouble(pSubFieldMessage, pSubField) == val)
 			FINDKEY_END
 		}break;
 		case google::protobuf::FieldDescriptor::CPPTYPE_BOOL: {
 			int val = lua_toboolean(l, 3);
 			FINDKEY_BEGIN
-				FIND_KEY_CHECK(int(pSubFieldReflection->GetBool(pSubFieldMessage, pSubField)) == val)
+				FINDKEY_CHECK(int(pSubFieldReflection->GetBool(pSubFieldMessage, pSubField)) == val)
 			FINDKEY_END
 		}break;
 		default: {
@@ -649,7 +649,88 @@ static int pb_repeated_find_message(lua_State* l)
 
 static int pb_repeated_find_othertype(lua_State* l)
 {
-	return 0;
+	luaL_argcheck(l, lua_gettop(l) == 2, 1, "expected 2 arguments");
+	ProtoBufRepeatedField* pRepeatedField = pb_torepeated(l, 1);
+	pb_check(l, pRepeatedField == NULL, "pRepeatedField is null\n");
+
+	const google::protobuf::FieldDescriptor* pField = pRepeatedField->field;
+	pb_check(l, pField == NULL, "pField is null\n");
+
+	google::protobuf::Message* pMessage = pRepeatedField->msg;
+	pb_check(l, pMessage == NULL, "pMessage is null\n");
+
+	const google::protobuf::Reflection* pReflection = pMessage->GetReflection();
+	pb_check(l, pReflection == NULL, "pReflection is null\n");
+
+	int sz = pReflection->FieldSize(*pMessage, pField);
+	int idx = -1;
+
+#define FINDKEY_OTHER_BEGIN \
+	for (int i = 0; i < sz; ++i) { 
+#define FINDKEY_OTHER_CHECK(exp) if(exp) { idx = i; break; }
+#define FINDKEY_OTHER_END }
+	switch (pField->cpp_type()) {
+	case google::protobuf::FieldDescriptor::CPPTYPE_STRING: {
+		const char* val = lua_tostring(l, 2);
+		FINDKEY_OTHER_BEGIN
+			std::string str = pReflection->GetRepeatedString(*pMessage, pField, i);
+			FINDKEY_OTHER_CHECK(!strncmp(val, str.c_str(), str.size()))
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_INT32: {
+		int32_t val = lua_tointeger(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(pReflection->GetRepeatedInt32(*pMessage, pField, i) == val)
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_UINT32: {
+		uint32_t val = lua_tointeger(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(pReflection->GetRepeatedUInt32(*pMessage, pField, i) == val)
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_INT64: {
+		int64_t val = lua_tointeger(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(pReflection->GetRepeatedInt64(*pMessage, pField, i) == val)
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_UINT64: {
+		uint64_t val = lua_tointeger(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(pReflection->GetRepeatedUInt64(*pMessage, pField, i) == val)
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT: {
+		float val = lua_tonumber(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(pReflection->GetRepeatedFloat(*pMessage, pField, i) == val)
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE: {
+		double val = lua_tonumber(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(pReflection->GetRepeatedDouble(*pMessage, pField, i) == val)
+		FINDKEY_OTHER_END
+	}break;
+	case google::protobuf::FieldDescriptor::CPPTYPE_BOOL: {
+		int val = lua_toboolean(l, 2);
+		FINDKEY_OTHER_BEGIN
+			FINDKEY_OTHER_CHECK(int(pReflection->GetRepeatedBool(*pMessage, pField, i)) == val)
+		FINDKEY_OTHER_END
+	}break;
+	default: {
+			luaL_error(l, "field:%s. unknow type:%d\n", pField->full_name(), pField->cpp_type());
+			return 0;
+		}
+	}
+
+	if (idx < 0) {
+		return 0;
+	}
+
+	lua_pushinteger(l, idx + 1);
+	return 1;
 }
 
 static int pb_repeated_find(lua_State* l)
@@ -682,10 +763,10 @@ static const luaL_Reg pblib[] = {
 static int pb_metafunc(lua_State* l)
 {
 	luaL_argcheck(l, lua_gettop(l) == 2, 1, "expected 2 argument");
-	const char* pcFieldName = luaL_checkstring(l, 2);
+	const char* pFieldName = luaL_checkstring(l, 2);
 	int sz = (sizeof(pblib) / sizeof(luaL_Reg)) - 1;
 	for (int i = 0; i < sz; ++i) {
-		if (!strcmp(pblib[i].name, pcFieldName)) {
+		if (!strcmp(pblib[i].name, pFieldName)) {
 			lua_pushcfunction(l, pblib[i].func);
 			return 1;
 		}
